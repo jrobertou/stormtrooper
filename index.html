@@ -1,0 +1,265 @@
+<html>
+<head>
+	<title>Great Robertou</title>
+	<link rel="stylesheet" type="text/css" href="/style.css">
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.js"></script>
+</head>
+<body>
+<div>
+		<input type="text" class="message" placeHolder="Share a sentance">
+</div>
+<div id="village">
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+	//gestion des mouvements
+
+
+	var animateLeftRight = function(direction, positionImage, man){
+		var move = (direction==0)?'-=7':'+=7';
+		var idMan = "#man"+man.id;
+		var idBulle = "#bulle"+man.id;
+
+		var windowEnd = function(idMan){
+			var leftVal = parseInt($(idMan).css('left')),
+				winWidth = $('body').width(),
+				widthMan = parseInt($(idMan).width());
+
+			if(leftVal > winWidth){
+				$(idMan).css('left', 0);
+			}
+			if(leftVal < -widthMan){
+				$(idMan).css('left', winWidth);
+			}
+		};
+
+		if(man.jetonAnimation == 1 && man.annimationEnCours == 0){
+			man.annimationEnCours = 1;
+
+			$(idMan).css('background-position', '-32px '+positionImage);
+
+			$(idBulle).animate({left: move},{queue: false, duration:50});
+			$(idMan).animate(
+				{left: move},
+				50, 
+				function() {
+					windowEnd(idMan);
+					windowEnd(idBulle);
+					$(idMan).css('background-position', '-64px '+positionImage);
+					$(idBulle).animate({left: move},{queue: false, duration:50});
+					$(idMan).animate(
+					{left: move},
+					50,
+					function() {
+						windowEnd(idMan);
+						windowEnd(idBulle);
+						$(idMan).css('background-position', '0px '+positionImage);
+						$(idBulle).animate({left: move},{queue: false, duration:50});
+						$(idMan).animate(
+							{left: move},
+							50, 
+							function() {
+								windowEnd(idMan);
+								windowEnd(idBulle);
+								man.annimationEnCours = 0;
+								animateLeftRight(direction, positionImage, man);
+						});
+					});
+				});
+		}
+	};
+
+	var animateUpDown = function(direction, positionImage, man){
+		var move = (direction==0/*top*/)?'-=7':'+=7';
+		var idMan = "#man"+man.id;
+		var idBulle = "#bulle"+man.id;
+
+ 		var windowEnd = function(idMan){
+			var topVal = parseInt($(idMan).css('top')),
+				winHeight = $('body').height(),
+				widthMan = parseInt($(idMan).width());
+
+			if(topVal > winHeight){
+				$(idMan).css('top', widthMan);
+			}else if(topVal < -widthMan){
+				$(idMan).css('top', winHeight);
+			}
+		};
+
+		if(man.jetonAnimation ==1 && man.annimationEnCours == 0){
+
+			man.annimationEnCours = 1;
+			$(idMan).css('background-position', '-32px '+positionImage);
+			$(idBulle).animate({top: move},{queue: false, duration:50});
+			$(idMan).animate(
+				{top: move},
+				50, 
+				function() {
+					
+					windowEnd(idMan);
+					windowEnd(idBulle);
+					$(idMan).css('background-position', '-64px '+positionImage);
+
+					$(idBulle).animate({top: move},{queue: false, duration:50});
+					$(idMan).animate(
+					{top: move},
+					50,
+					function() {
+
+						windowEnd(idMan);
+						windowEnd(idBulle);
+						$(idMan).css('background-position', '0px '+positionImage);
+						$(idBulle).animate({top: move},{queue: false, duration:50});
+						$(idMan).animate(
+							{top: move},
+							50, 
+							function() {
+								windowEnd(idMan);
+								windowEnd(idBulle);
+								man.annimationEnCours = 0;
+								animateUpDown(direction, positionImage, man);
+						});
+					});
+				});
+		}
+	};
+
+	var moveMan = function(man, keyCode){
+		man.jetonAnimation = 1;
+		var val = keyCode;
+		switch(val){
+			case 37: 
+				//je vais en gauche
+				animateLeftRight(0, '-32px', man);
+				break;
+			case 38: 
+				//je vais en haut
+				animateUpDown(0, '-96px', man);
+				break;
+			case 39: 
+				//je vais à droite
+				animateLeftRight(1, '-64px', man);
+				break;
+			case 40:
+				//je vais en bas
+				animateUpDown(1, '0px', man);
+				break;
+			default: break;
+		}
+	};
+
+	var stopMan = function(man){
+		if(man.jetonAnimation) {
+			man.jetonAnimation = 0;
+		}
+	};
+	var keyPressed = null;
+	$(document).keydown(function(event) {
+		///moveMan(village[myId], event.keyCode);eyCode;
+		iMove(event.keyCode);
+	});
+	$(document).keyup(function(event) {
+		//stopMan(village[myId])
+		iStop(myId);
+	});
+
+</script>
+<script>
+	var socket = io.connect('/');
+	var myId = null;
+	var village = {};
+
+	var addUser = function(id, image, postionTop, postionLeft){
+
+		$('#village').append('<div id="bulle'+id+'" class="bulle"><p></p></div>');
+		$('#village').append('<div id="man'+id+'" class="theMan"><div>');
+		//placement du personnage
+		$('#man'+id).css('left', postionLeft);
+		$('#man'+id).css('top', postionTop);
+		//placement de la bulle de dialogue
+		postionTop -= 35;
+		$('#bulle'+id).css('left', postionLeft);
+		$('#bulle'+id).css('top', postionTop);
+
+		
+
+		$('#man'+id).css('background', 'url(/images/StarWars'+image+'.png) no-repeat 0 0' );
+		village[id] = {
+			id: id,
+			jetonAnimation: 0,
+			annimationEnCours : 0,
+			image: image
+		};
+	};
+
+	socket.on('hi', function (data) {
+		myId = data.id;
+
+		//enregistrement de mon bonhomme
+		addUser(myId, data.numImage, data.postionTop, data.postionTop);
+
+		//On ajoute le texte vos messages
+		//$('#feedBack').html('<div id="'+myId+'" class="bulle"><p><span></span></p></div>');
+
+		//On place notre bonhomme
+
+		//Manage users
+		var user = null,
+			obj = data.others;
+		for(user in obj){
+			if(obj[user]){
+				addUser(user, obj[user].numImage, obj[user].postionTop, obj[user].postionTop);
+			}
+		}
+	});
+
+	socket.on('newUser', function (data) {
+		//Add Client Message...
+		addUser(data.id, data.numImage, data.postionTop, data.postionTop);
+	});
+
+	socket.on('messageReceived', function (data) {
+		//Add Client Message...
+		$('#bulle'+data.id+' p').html(data.mes);
+	});
+
+	$('.message').change(function() {
+		socket.emit('messageSent',{ mes: $(".message").val(), id:myId });
+		$(".message").attr('value', '');
+		return false;
+	});
+
+	socket.on('userDisconnected', function (data) {
+		//Add Client Message...
+		$('#bulle'+data.id).remove();
+		$("#man"+data.id).remove();
+	});
+
+
+	socket.on('villageMove', function (data) {
+		moveMan(village[data.id], data.keyCode);
+	});
+
+	socket.on('villageFixed', function (data) {
+		stopMan(village[data.id]);
+	});
+
+	var iMove = function(keyCode){
+		socket.emit('move',{ keyCode: keyCode, id:myId });
+	};
+
+	var iStop = function(){
+		socket.emit('stop',{id:myId });
+	};
+
+	/*
+	socket.on('bonjour', function (data) {
+		console.log(data.hello);
+	});
+	*/
+</script>
+</body>
+</html>

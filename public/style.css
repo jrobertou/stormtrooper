@@ -1,0 +1,37 @@
+body{
+	overflow-x:none;
+}
+
+.theMan{
+	z-index:999;
+	width:32px;
+	height:32px;
+	position:fixed;
+	top:350px;
+	left:350px;
+	background: url(/images/StarWars.png) no-repeat 0 0;
+}
+
+.bulle {
+    margin-bottom: 24px;
+    max-width: 150px;
+	position:fixed;
+	top:350px;
+	left:350px;
+}
+
+.bulle p {
+    margin: 0px;
+    padding: 3px 10px;
+    border: 1px solid #c9c2c1;
+    background-color: #fff;
+}
+
+div.bulle cite {
+    position: relative;
+    margin: 0px;
+    padding: 7px 0px 0px 15px;
+    top: 6px;
+    background: transparent url(/images/FlecheBulle.gif) no-repeat 20px 0;
+    font-style: normal;
+} 
